@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>घर का हिसाब</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{--bg:#f3f1ec;--card:#fff;--tx:#1d2a24;--mut:#6b7a72;--ln:#e1ded5;--in:#1f7a4d;--ex:#c2452d;--ac:#14463a}
+@media(prefers-color-scheme:dark){:root{--bg:#111815;--card:#1a2420;--tx:#e8efe9;--mut:#8fa197;--ln:#2c3a34;--in:#4cc38a;--ex:#ff7a5c;--ac:#4cc38a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Noto Sans Devanagari",system-ui,sans-serif;padding-bottom:90px}
+.w{max-width:760px;margin:auto;padding:14px}
+h1{font-size:20px;margin:0}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:14px;margin-bottom:12px}
+.tabs{display:flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden;background:var(--card)}
+.tabs button{flex:1;border:0;background:none;color:var(--tx);padding:9px;font:inherit;cursor:pointer}
+.tabs .on{background:var(--ac);color:var(--bg)}
+.nav{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-weight:600}
+button,input,select{font:inherit;color:var(--tx)}
+.nb{border:1px solid var(--ln);background:var(--card);border-radius:8px;padding:6px 14px;cursor:pointer}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum div{text-align:center}.sum small{color:var(--mut);display:block}.sum b{font-size:18px}
+.i{color:var(--in)}.e{color:var(--ex)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:90px;margin-top:6px}
+.bars div{flex:1;display:flex;gap:1px;align-items:flex-end;height:100%}
+.bars i{flex:1;min-height:1px;border-radius:2px 2px 0 0}
+.cat{margin:8px 0}.cat .r{display:flex;justify-content:space-between}
+.cat .t{height:6px;background:var(--ln);border-radius:3px;margin-top:3px}.cat .t i{display:block;height:100%;background:var(--ex);border-radius:3px}
+.tx{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--ln)}
+.tx:first-child{border-top:0}.tx small{color:var(--mut)}
+.x{border:0;background:none;color:var(--mut);cursor:pointer;font-size:18px}
+.fab{position:fixed;right:18px;bottom:18px;background:var(--ac);color:var(--bg);border:0;border-radius:28px;padding:14px 22px;font-weight:600;box-shadow:0 4px 14px #0004;cursor:pointer}
+.sh{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:9}
+.sh.on{display:flex}.sh>div{background:var(--card);width:100%;max-width:520px;border-radius:14px 14px 0 0;padding:16px;max-height:92vh;overflow:auto}
+.sh input,.sh select{width:100%;padding:10px;margin:5px 0 10px;border:1px solid var(--ln);border-radius:8px;background:var(--bg)}
+.sw{display:flex;gap:8px;margin-bottom:10px}.sw button{flex:1;padding:10px;border:1px solid var(--ln);border-radius:8px;background:none;cursor:pointer}
+.sw .on.in{background:var(--in);color:#fff}.sw .on.ex{background:var(--ex);color:#fff}
+.pb{width:100%;padding:12px;border:0;border-radius:8px;background:var(--ac);color:var(--bg);font-weight:600;cursor:pointer}
+.st{color:var(--mut);font-size:13px;margin-top:6px}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style></head><body>
+<div class="w">
+<div class="top"><h1>घर का हिसाब</h1><div><button class="nb" onclick="op('cfg')">⚙ सेटिंग / Drive</button></div></div>
+<div class="tabs" id="tabs"></div>
+<div class="nav"><button class="nb" onclick="shift(-1)">‹</button><span id="lbl"></span><button class="nb" onclick="shift(1)">›</button></div>
+<div class="card sum" id="sum"></div>
+<div class="card" id="trend"></div>
+<div class="card" id="cats"></div>
+<div class="card" id="list"></div>
+<div class="st" id="msg"></div>
+</div>
+<button class="fab" onclick="op('add')">+ एंट्री जोड़ें</button>
+
+<div class="sh" id="add" onclick="if(event.target===this)cl('add')"><div>
+<div class="sw"><button id="bi" class="in" onclick="setT('i')">आमदनी</button><button id="be" class="ex on" onclick="setT('e')">खर्च</button></div>
+<label>रकम (₹)<input id="amt" type="number" inputmode="decimal" min="0"></label>
+<label>श्रेणी<select id="cat"></select></label>
+<label>तारीख<input id="dt" type="date"></label>
+<label>नोट<input id="nt" placeholder="जैसे: सब्ज़ी, बिजली बिल"></label>
+<button class="pb" onclick="addTx()">सेव करें</button></div></div>
+
+<div class="sh" id="cfg" onclick="if(event.target===this)cl('cfg')"><div>
+<h3 style="margin-top:0">Google Drive सिंक</h3>
+<label>Google Client ID<input id="cid" placeholder="xxxx.apps.googleusercontent.com"></label>
+<button class="pb" onclick="localStorage.setItem('cid',$('cid').value.trim());connect()">Drive से जोड़ें और सिंक करें</button>
+<div class="st">जुड़ने के बाद हर एंट्री अपने-आप Drive में <b>ghar-hisab.json</b> में सेव होगी। डेटा हर हाल में फोन में भी रहता है।</div>
+<hr style="border:0;border-top:1px solid var(--ln);margin:14px 0">
+<button class="pb" style="background:var(--card);color:var(--tx);border:1px solid var(--ln)" onclick="csv()">CSV एक्सपोर्ट (Excel के लिए)</button>
+</div></div>
+
+<script>
+const $=s=>document.getElementById(s);
+const CAT={e:['खाना-राशन','किराया / EMI','बिजली-पानी-गैस','मोबाइल-रिचार्ज','पेट्रोल-यातायात','दवाई-इलाज','शिक्षा-फीस','कपड़े','मनोरंजन','त्योहार-मेहमान','बचत-निवेश','अन्य'],i:['सैलरी','व्यापार','खेती','किराया आय','ब्याज','उपहार','अन्य']};
+const MN=['जन','फर','मार्च','अप्रै','मई','जून','जुला','अग','सित','अक्टू','नव','दिस'];
+let S;try{S=JSON.parse(localStorage.getItem('hh'))}catch(e){}
+S=S||{tx:[],del:[]};
+let mode='m',anc=new Date(),T='e',tok=null,timer;
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fm=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const msg=t=>$('msg').textContent=t;
+function save(){try{localStorage.setItem('hh',JSON.stringify(S))}catch(e){}clearTimeout(timer);if(tok)timer=setTimeout(sync,2000);render()}
+function rng(){const a=new Date(anc.getFullYear(),anc.getMonth(),anc.getDate());let s=new Date(a),e=new Date(a);
+if(mode=='w'){s.setDate(a.getDate()-(a.getDay()+6)%7);e=new Date(s);e.setDate(s.getDate()+6)}
+if(mode=='m'){s=new Date(a.getFullYear(),a.getMonth(),1);e=new Date(a.getFullYear(),a.getMonth()+1,0)}
+if(mode=='y'){s=new Date(a.getFullYear(),0,1);e=new Date(a.getFullYear(),11,31)}return[s,e]}
+function shift(n){if(mode=='d')anc.setDate(anc.getDate()+n);if(mode=='w')anc.setDate(anc.getDate()+7*n);if(mode=='m')anc.setMonth(anc.getMonth()+n,1);if(mode=='y')anc.setFullYear(anc.getFullYear()+n);render()}
+function render(){
+$('tabs').innerHTML=[['d','दिन'],['w','हफ़्ता'],['m','महीना'],['y','साल']].map(([k,v])=>`<button class="${k==mode?'on':''}" onclick="mode='${k}';render()">${v}</button>`).join('');
+const[s,e]=rng(),a=ds(s),b=ds(e);
+$('lbl').textContent=mode=='d'?a:mode=='y'?s.getFullYear():mode=='m'?MN[s.getMonth()]+' '+s.getFullYear():a+' से '+b;
+const L=S.tx.filter(t=>t.date>=a&&t.date<=b).sort((x,y)=>y.date.localeCompare(x.date)||y.id.localeCompare(x.id));
+const I=L.filter(t=>t.type=='i').reduce((p,t)=>p+t.amt,0),E=L.filter(t=>t.type=='e').reduce((p,t)=>p+t.amt,0);
+$('sum').innerHTML=`<div><small>आमदनी</small><b class="i">${fm(I)}</b></div><div><small>खर्च</small><b class="e">${fm(E)}</b></div><div><small>बचत${I?' ('+Math.round((I-E)/I*100)+'%)':''}</small><b>${fm(I-E)}</b></div>`;
+// trend
+if(mode=='d'){$('trend').style.display='none'}else{$('trend').style.display='';
+const K=[];if(mode=='y'){for(let m=0;m<12;m++)K.push([s.getFullYear()+'-'+pad(m+1),MN[m]])}else{for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))K.push([ds(d),d.getDate()])}
+const sl=mode=='y'?7:10,val=K.map(([k])=>{const x=L.filter(t=>t.date.slice(0,sl)==k);return[x.filter(t=>t.type=='i').reduce((p,t)=>p+t.amt,0),x.filter(t=>t.type=='e').reduce((p,t)=>p+t.amt,0)]});
+const mx=Math.max(1,...val.flat());
+$('trend').innerHTML=`<b>आमदनी बनाम खर्च</b><div class="bars">${val.map(v=>`<div><i style="height:${v[0]/mx*100}%;background:var(--in)"></i><i style="height:${v[1]/mx*100}%;background:var(--ex)"></i></div>`).join('')}</div>`}
+// categories
+const C={};L.filter(t=>t.type=='e').forEach(t=>C[t.cat]=(C[t.cat]||0)+t.amt);
+const cs=Object.entries(C).sort((x,y)=>y[1]-x[1]);
+$('cats').innerHTML='<b>खर्च श्रेणी अनुसार</b>'+(cs.length?cs.map(([k,v])=>`<div class="cat"><div class="r"><span>${esc(k)}</span><span>${fm(v)} · ${Math.round(v/E*100)}%</span></div><div class="t"><i style="width:${v/E*100}%"></i></div></div>`).join(''):'<div class="st">इस अवधि में कोई खर्च नहीं।</div>');
+$('list').innerHTML='<b>एंट्रियाँ</b>'+(L.length?L.map(t=>`<div class="tx"><div>${esc(t.cat)}<br><small>${t.date}${t.note?' · '+esc(t.note):''}</small></div><div style="text-align:right"><b class="${t.type}">${t.type=='i'?'+':'−'}${fm(t.amt)}</b> <button class="x" aria-label="हटाएँ" onclick="del('${t.id}')">×</button></div></div>`).join(''):'<div class="st">कोई एंट्री नहीं। नीचे “+ एंट्री जोड़ें” दबाएँ।</div>')}
+function op(i){if(i=='add'){setT(T);$('dt').value=ds(new Date());$('amt').value='';$('nt').value=''}if(i=='cfg')$('cid').value=localStorage.getItem('cid')||'';$(i).classList.add('on')}
+function cl(i){$(i).classList.remove('on')}
+function setT(t){T=t;$('bi').classList.toggle('on',t=='i');$('be').classList.toggle('on',t=='e');$('cat').innerHTML=CAT[t].map(c=>`<option>${c}</option>`).join('')}
+function addTx(){const amt=parseFloat($('amt').value);if(!(amt>0)||!$('dt').value){alert('सही रकम और तारीख डालें');return}
+S.tx.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),type:T,amt,cat:$('cat').value,date:$('dt').value,note:$('nt').value.trim()});cl('add');save()}
+function del(id){if(!confirm('यह एंट्री हटाएँ?'))return;S.tx=S.tx.filter(t=>t.id!=id);(S.del=S.del||[]).push(id);save()}
+function csv(){const r=[['तारीख','प्रकार','श्रेणी','रकम','नोट'],...S.tx.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>[t.date,t.type=='i'?'आमदनी':'खर्च',t.cat,t.amt,t.note])];
+const b=new Blob(['\ufeff'+r.map(x=>x.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ghar-hisab.csv';a.click()}
+// Google Drive
+function connect(){const id=localStorage.getItem('cid');if(!id){msg('पहले Client ID डालें');return}
+if(!window.google){msg('Google स्क्रिप्ट लोड नहीं हुई, इंटरनेट जाँचें');return}
+google.accounts.oauth2.initTokenClient({client_id:id,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>{if(r.access_token){tok=r.access_token;cl('cfg');sync()}else msg('अनुमति नहीं मिली')}}).requestAccessToken()}
+async function api(u,o={}){o.headers=Object.assign({Authorization:'Bearer '+tok},o.headers||{});const r=await fetch(u,o);if(!r.ok)throw new Error(r.status);return r}
+function merge(r){const d=new Set([...(S.del||[]),...(r.del||[])]),m={};[...(r.tx||[]),...S.tx].forEach(t=>m[t.id]=t);S.del=[...d];S.tx=Object.values(m).filter(t=>!d.has(t.id))}
+async function sync(){if(!tok)return;try{msg('Drive सिंक हो रहा है…');
+const q=encodeURIComponent("name='ghar-hisab.json' and trashed=false");
+const l=await(await api('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)')).json();const id=l.files[0]&&l.files[0].id;
+if(id)merge(await(await api('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media')).json());
+const body=JSON.stringify(S);
+if(id)await api('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body});
+else{const b='hhb';await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body:`--${b}\r\nContent-Type: application/json\r\n\r\n{"name":"ghar-hisab.json"}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${b}--`})}
+try{localStorage.setItem('hh',body)}catch(e){}render();msg('✓ Drive में सेव '+new Date().toLocaleTimeString('hi-IN'))}
+catch(e){if(e.message=='401')tok=null;msg('सिंक में दिक्कत ('+e.message+'). सेटिंग से दोबारा जोड़ें')}}
+setT('e');render();
+</script></body></html>
